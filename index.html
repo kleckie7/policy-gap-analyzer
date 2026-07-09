@@ -99,6 +99,7 @@
       <button id="fileBtn">Load .txt / .md file</button>
       <input type="file" id="fileInput" accept=".txt,.md,text/plain,text/markdown" style="display:none">
       <button id="sampleBtn">Load sample policy</button>
+      <button id="demoBtn">View sample results — no API key needed</button>
       <span class="hint" id="charCount"></span>
     </div>
     <div class="progress-wrap" id="progressWrap">
@@ -310,6 +311,45 @@ const SAMPLE_POLICY=`NORTHFIELD SOFTWARE INC. — INFORMATION SECURITY POLICY (v
 
 12. Review. This policy is reviewed annually by management.`;
 
+/* ============ demo mode: pre-computed assessment of the sample policy ============ */
+/* Honest canned output so visitors can see results without an API key. Statuses were
+   derived from the sample policy's actual content: it covers access/auth/vendors/backups/
+   incidents/awareness and omits physical security, crypto, logging, and secure development. */
+const DEMO_OVERRIDES={
+ "A.5.1":["C","policy exists, reviewed annually by management","Add version history and approval sign-off."],
+ "A.5.2":["P","Director of Operations accountable; staff responsible","Define security roles beyond a single owner."],
+ "A.5.4":["P","violations may result in disciplinary action","State management's specific security duties."],
+ "A.5.10":["C","company systems are for business purposes","Add rules for data and asset handling."],
+ "A.5.12":["P","customer data is classified as Confidential","Define a full classification scheme with levels."],
+ "A.5.15":["C","least-privilege access approved by resource owner","Document access-control rules per system tier."],
+ "A.5.16":["P","unique credentials required; shared accounts prohibited","Define joiner/mover/leaver identity lifecycle."],
+ "A.5.17":["C","12+ character passwords, MFA for remote and admin","Add credential storage and reset requirements."],
+ "A.5.18":["C","access reviewed quarterly, revoked within 24 hours","Log review outcomes for audit evidence."],
+ "A.5.19":["P","vendors complete security questionnaire before onboarding","Add ongoing vendor monitoring, not just onboarding."],
+ "A.5.20":["P","contracts include confidentiality clauses","Add security requirements clauses to contracts."],
+ "A.5.24":["C","incident response runbook maintained","Define severity levels and escalation paths."],
+ "A.5.25":["P","suspected incidents reported to Director immediately","Define event triage and classification criteria."],
+ "A.5.26":["P","incident response runbook exists","Document containment and recovery procedures."],
+ "A.5.27":["C","incidents reviewed after closure","Track lessons learned to remediation actions."],
+ "A.6.3":["C","training at hire and annually","Add role-specific training for privileged users."],
+ "A.6.4":["C","disciplinary action up to termination","Reference HR process and due-process steps."],
+ "A.6.7":["C","VPN required; devices locked when unattended","Add home network and device standards."],
+ "A.6.8":["C","suspected incidents reported immediately","Provide an anonymous reporting channel."],
+ "A.8.1":["P","devices locked when unattended; no confidential data on personal devices","Add endpoint hardening and encryption standards."],
+ "A.8.5":["C","MFA required for remote and administrative access","Extend MFA to all user access."],
+ "A.8.13":["C","nightly backups, restoration tested twice yearly","Define retention periods and backup encryption."],
+ "A.8.19":["P","employees must not install unapproved software","Add technical enforcement, not policy alone."],
+ "A.1.demo":["M","",""]
+};
+function demoResults(){
+  return CATALOG.map(c=>{
+    const o=DEMO_OVERRIDES[c.id];
+    if(o)return{id:c.id,title:c.title,theme:c.theme,s:o[0],e:o[1],r:o[2]};
+    return{id:c.id,title:c.title,theme:c.theme,s:"M",e:"",
+      r:"Add a policy section addressing "+c.title.toLowerCase()+"."};
+  });
+}
+
 /* ============ API ============ */
 async function callClaude(prompt){
   const key=document.getElementById("apiKey").value.trim();
@@ -437,6 +477,15 @@ $("testBtn").addEventListener("click",async()=>{
       st.textContent="✗ Failed ("+r.status+")"+detail;
     }
   }catch(e){st.textContent="✗ Network error — "+e.message;}
+});
+
+$("demoBtn").addEventListener("click",()=>{
+  clearError();
+  $("policyText").value=SAMPLE_POLICY;
+  $("policyText").dispatchEvent(new Event("input"));
+  SCOPE_LABEL="All themes (93 controls) — pre-computed sample";
+  render(demoResults());
+  showError("Sample output: this is a pre-computed assessment of the built-in sample policy, shown so you can explore the results format without an API key. To analyze a real policy, add a key in step 0 and click Analyze.");
 });
 
 $("sampleBtn").addEventListener("click",()=>{$("policyText").value=SAMPLE_POLICY;$("policyText").dispatchEvent(new Event("input"));});
